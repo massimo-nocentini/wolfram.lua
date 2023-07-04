@@ -27,20 +27,19 @@ int l_wolfram(lua_State *L)
     char **argv = {"\"/usr/local/bin/math -wstp\""};
     int argc = 1;
 
-    lp = WSOpenString(ep, "-linkname /usr/local/Wolfram/WolframEngine/13.2/Executables/math -wstp", &err);
-    ;
+    lp = WSOpenString(ep, "-linkmode launch -linkname '/usr/local/Wolfram/WolframEngine/13.2/Executables/math -wstp'", &err);
 
     if (lp == (WSLINK)0 || error != WSEOK)
     {
         luaL_error(L, "unable to create link to the Kernel: %d", error);
     }
 
-    printf("Connected\n.");
-
     WSPutFunction(lp, "EvaluatePacket", 1L);
     WSPutFunction(lp, "FactorInteger", 1L);
     WSPutInteger(lp, n);
     WSEndPacket(lp);
+
+    printf("Sent\n.");
 
     while ((pkt = WSNextPacket(lp), pkt) && pkt != RETURNPKT)
     {
@@ -48,6 +47,8 @@ int l_wolfram(lua_State *L)
         if (WSError(lp))
             luaL_error(L, "a");
     }
+
+    printf("Received\n.");
 
     if (!WSTestHead(lp, "List", &len))
         luaL_error(L, "b");
