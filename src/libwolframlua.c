@@ -11,7 +11,6 @@ int l_wolfram(lua_State *L)
 {
     WSENV ep;
     WSLINK lp;
-    long error;
 
     int pkt, n, prime, expt, err;
     int len, lenp, k;
@@ -24,14 +23,11 @@ int l_wolfram(lua_State *L)
         luaL_error(L, "unable to initialize environment");
     }
 
-    char **argv = {"\"/usr/local/bin/math -wstp\""};
-    int argc = 1;
+    lp = WSOpenString(ep, "-linkname '/usr/local/Wolfram/WolframEngine/13.2/Executables/math -wstp'", &err);
 
-    lp = WSOpenString(ep, "-linkmode launch -linkname '/usr/local/Wolfram/WolframEngine/13.2/Executables/math -wstp'", &err);
-
-    if (lp == (WSLINK)0 || error != WSEOK)
+    if (lp == (WSLINK)0 || err != WSEOK)
     {
-        luaL_error(L, "unable to create link to the Kernel: %d", error);
+        luaL_error(L, "unable to create link to the Kernel: %d", err);
     }
 
     WSPutFunction(lp, "EvaluatePacket", 1L);
@@ -39,7 +35,7 @@ int l_wolfram(lua_State *L)
     WSPutInteger(lp, n);
     WSEndPacket(lp);
 
-    printf("Sent\n.");
+    printf("Sent\n");
 
     while ((pkt = WSNextPacket(lp), pkt) && pkt != RETURNPKT)
     {
@@ -48,7 +44,7 @@ int l_wolfram(lua_State *L)
             luaL_error(L, "a");
     }
 
-    printf("Received\n.");
+    printf("Received\n");
 
     if (!WSTestHead(lp, "List", &len))
         luaL_error(L, "b");
