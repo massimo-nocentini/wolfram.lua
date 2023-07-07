@@ -23,7 +23,7 @@ int l_wolfram(lua_State *L)
         luaL_error(L, "unable to initialize environment");
     }
 
-    lp = WSOpenString(ep, "-linkname '/usr/local/Wolfram/WolframEngine/13.2/Executables/math -wstp'", &err);
+    lp = WSOpenString(ep, "lua -linkname '/usr/local/Wolfram/WolframEngine/13.2/Executables/math -wstp'", &err);
 
     if (lp == (WSLINK)0 || err != WSEOK)
     {
