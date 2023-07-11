@@ -3,7 +3,6 @@
 linux:
 	gcc -O3 -fPIC -Wall -shared -o libwolframlua.so libwolframlua.c \
 		-I/usr/local/Wolfram/WolframEngine/13.2/SystemFiles/Links/WSTP/DeveloperKit/Linux-x86-64/CompilerAdditions/ \
-		-L/usr/local/lib \
 		-llua -lWSTP64i4 -lm -lpthread -lrt -lstdc++ -ldl -luuid
 
 install:

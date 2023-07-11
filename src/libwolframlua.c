@@ -23,22 +23,30 @@ int l_wolfram(lua_State *L)
         luaL_error(L, "unable to initialize environment");
     }
 
-    lp = WSOpenString(ep, "lua -linkname '/usr/local/Wolfram/WolframEngine/13.2/Executables/math -wstp'", &err);
+    lp = WSOpenString(ep, "-linkmode launch -linkname '/usr/local/Wolfram/WolframEngine/13.2/Executables/wolfram -wstp -noprompt -noicon'", &err);
 
     if (lp == (WSLINK)0 || err != WSEOK)
     {
         luaL_error(L, "unable to create link to the Kernel: %d", err);
     }
 
+    WSActivate(lp);
+    if (!WSActivate(lp))
+    {
+        luaL_error(L, "unable to establish communication");
+    }
+
     WSPutFunction(lp, "EvaluatePacket", 1L);
     WSPutFunction(lp, "FactorInteger", 1L);
     WSPutInteger(lp, n);
     WSEndPacket(lp);
+    WSFlush(lp);
 
     printf("Sent\n");
 
     while ((pkt = WSNextPacket(lp), pkt) && pkt != RETURNPKT)
     {
+        printf(".\n");
         WSNewPacket(lp);
         if (WSError(lp))
             luaL_error(L, "a");
