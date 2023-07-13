@@ -1,5 +1,8 @@
 {
     "files.associations": {
-        "wstp.h": "c"
+        "wstp.h": "c",
+        "string_view": "c",
+        "string": "c",
+        "format": "c"
     }
 }

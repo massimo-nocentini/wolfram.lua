@@ -88,8 +88,128 @@ int l_wolfram(lua_State *L)
     return 1;
 }
 
+void rec(lua_State *L, WSLINK lp)
+{
+    const char *string;
+    int bytes;
+    int characters;
+    int n;
+
+    switch (WSGetNext(lp))
+    {
+    case WSTKFUNC:
+
+        if (!WSGetUTF8Function(lp, &string, &characters, &n))
+        {
+            luaL_error(L, "unable to read the function from lp");
+        }
+
+        lua_createtable(L, 0, 2);
+
+        lua_pushstring(L, string);
+        lua_setfield(L, -2, "head");
+
+        WSReleaseUTF8Symbol(lp, string, characters);
+
+        lua_createtable(L, n, 0);
+        for (int i = 0; i < n; i++)
+        {
+            rec(L, lp);
+            lua_seti(L, -2, i + 1);
+        }
+
+        lua_setfield(L, -2, "arguments");
+
+        break;
+
+    case WSTKSTR:
+
+        if (!WSGetUTF8String(lp, &string, &bytes, &characters))
+        {
+            luaL_error(L, "unable to read the UTF-8 string from lp");
+        }
+
+        lua_pushstring(L, string);
+
+        WSReleaseUTF8String(lp, string, bytes);
+
+        break;
+
+    case WSTKSYM:
+
+        if (!WSGetUTF8Symbol(lp, &string, &bytes, &characters))
+        {
+            luaL_error(L, "unable to read the UTF-8 symbol from lp");
+        }
+
+        lua_createtable(L, 0, 2);
+
+        lua_pushstring(L, "Symbol");
+        lua_setfield(L, -2, "head");
+
+        lua_createtable(L, 1, 0);
+        lua_pushstring(L, string);
+        lua_seti(L, -2, 1);
+
+        lua_setfield(L, -2, "arguments");
+
+        WSReleaseUTF8Symbol(lp, string, bytes);
+
+        break;
+
+    case WSTKINT:
+
+        wsint64 i;
+        if (!WSGetInteger64(lp, &i))
+        {
+            luaL_error(L, "unable to read the long from lp");
+        }
+
+        lua_pushinteger(L, i);
+
+        break;
+
+    case WSTKREAL:
+
+        double r;
+        if (!WSGetReal64(lp, &r))
+        {
+            luaL_error(L, "unable to read the real from lp");
+        }
+
+        lua_pushnumber(L, r);
+
+        break;
+
+    default:
+        printf("unknown %d\n", WSGetType(lp));
+        lua_pushinteger(L, WSGetType(lp));
+        break;
+    }
+}
+
+int l_evaluate(lua_State *L)
+{
+    WSLINK lp = (WSLINK)lua_touserdata(L, 1);
+
+    int pkt, err;
+
+    while ((pkt = WSNextPacket(lp), pkt) && pkt != RETURNPKT)
+    {
+        printf("%d.\n", pkt);
+        WSNewPacket(lp);
+        if (err = WSError(lp), err)
+            luaL_error(L, "Error %d", err);
+    }
+
+    rec(L, lp);
+
+    return 1;
+}
+
 const struct luaL_Reg libwolframlua[] = {
     {"wolfram", l_wolfram},
+    {"evaluate", l_evaluate},
     {NULL, NULL} /* sentinel */
 };
 
