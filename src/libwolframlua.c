@@ -144,7 +144,7 @@ void rec(lua_State *L, WSLINK lp)
 
         lua_createtable(L, 0, 2);
 
-        lua_pushstring(L, "Symbol");
+        lua_pushstring(L, "__symbol");
         lua_setfield(L, -2, "head");
 
         lua_createtable(L, 1, 0);
@@ -193,10 +193,39 @@ int l_evaluate(lua_State *L)
     WSLINK lp = (WSLINK)lua_touserdata(L, 1);
 
     int pkt, err;
+    int code, param;
+
+    const unsigned char *string;
+    int bytes;
+    int characters;
 
     while ((pkt = WSNextPacket(lp), pkt) && pkt != RETURNPKT)
     {
-        printf("%d.\n", pkt);
+        switch (pkt)
+        {
+        case MESSAGEPKT:
+            if (!WSGetMessage(lp, &code, &param))
+            {
+                luaL_error(L, "unable to read the message code from lp");
+            }
+            printf("Got message code %d with param %d\n", code, param);
+            break;
+        case TEXTPKT:
+
+            if (!WSGetUTF8String(lp, &string, &bytes, &characters))
+            {
+                luaL_error(L, "unable to read the UTF-8 string from lp");
+            }
+
+            printf("Got the text: %s\n", string);
+
+            WSReleaseUTF8String(lp, string, bytes);
+            break;
+        default:
+            printf("Got packet of type %d.\n", pkt);
+            break;
+        }
+
         WSNewPacket(lp);
         if (err = WSError(lp), err)
             luaL_error(L, "Error %d", err);
