@@ -182,8 +182,7 @@ void rec(lua_State *L, WSLINK lp)
         break;
 
     default:
-        printf("unknown %d\n", WSGetType(lp));
-        lua_pushinteger(L, WSGetType(lp));
+        luaL_error(L, "Unhandled value of type id %d.", WSGetType(lp));
         break;
     }
 }
