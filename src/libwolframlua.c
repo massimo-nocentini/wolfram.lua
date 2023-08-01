@@ -91,9 +91,13 @@ int l_wolfram(lua_State *L)
 void rec(lua_State *L, WSLINK lp)
 {
     const char *string;
+    const char *theNumber;
     int bytes;
     int characters;
     int n;
+    int rawType;
+    wsint64 i;
+    double r;
 
     switch (WSGetNext(lp))
     {
@@ -159,25 +163,75 @@ void rec(lua_State *L, WSLINK lp)
 
     case WSTKINT:
 
-        wsint64 i;
-        if (!WSGetInteger64(lp, &i))
-        {
-            luaL_error(L, "unable to read the long from lp");
-        }
+        rawType = WSGetRawType(lp);
 
-        lua_pushinteger(L, i);
+        if (rawType == WSTK_WSSHORT || rawType == WSTK_WSINT || rawType == WSTK_WSSIZE_T || rawType == WSTK_WSLONG || rawType == WSTK_WSINT64)
+        {
+            if (!WSGetInteger64(lp, &i))
+            {
+                luaL_error(L, "unable to read the long from lp");
+            }
+
+            lua_pushinteger(L, i);
+        }
+        else
+        {
+
+            WSGetNumberAsString(lp, &theNumber);
+
+            lua_createtable(L, 0, 2);
+
+            lua_pushstring(L, "__arbitrary_precision_number");
+            lua_setfield(L, -2, "head");
+
+            lua_createtable(L, 2, 0);
+            lua_pushstring(L, theNumber);
+            lua_seti(L, -2, 1);
+
+            lua_pushboolean(L, 1); // the head, 1 for Integer.
+            lua_seti(L, -2, 2);
+
+            lua_setfield(L, -2, "arguments");
+
+            WSReleaseString(lp, theNumber);
+        }
 
         break;
 
     case WSTKREAL:
 
-        double r;
-        if (!WSGetReal64(lp, &r))
-        {
-            luaL_error(L, "unable to read the real from lp");
-        }
+        rawType = WSGetRawType(lp);
 
-        lua_pushnumber(L, r);
+        if (rawType == WSTK_WSFLOAT || rawType == WSTK_WSDOUBLE)
+        {
+            if (!WSGetReal64(lp, &r))
+            {
+                luaL_error(L, "unable to read the real from lp");
+            }
+
+            lua_pushnumber(L, r);
+        }
+        else
+        {
+
+            WSGetNumberAsString(lp, &theNumber);
+
+            lua_createtable(L, 0, 2);
+
+            lua_pushstring(L, "__arbitrary_precision_number");
+            lua_setfield(L, -2, "head");
+
+            lua_createtable(L, 2, 0);
+            lua_pushstring(L, theNumber);
+            lua_seti(L, -2, 1);
+
+            lua_pushboolean(L, 0); // the head, 0 for Real.
+            lua_seti(L, -2, 2);
+
+            lua_setfield(L, -2, "arguments");
+
+            WSReleaseString(lp, theNumber);
+        }
 
         break;
 
